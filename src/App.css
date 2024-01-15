@@ -36,3 +36,23 @@
     transform: rotate(360deg);
   }
 }
+/* Existing styles... */
+
+.carousel-container {
+  display: flex;
+  overflow-x: auto;
+  gap: 10px;
+  max-width: 500px; /* Adjust as needed */
+}
+
+.carousel-container img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+/* Toast styles */
+.Toastify__toast--info {
+  background: #007bff;
+  color: white;
+}
