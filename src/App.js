@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 
 import "./App.css";
@@ -6,11 +6,34 @@ import "./App.css";
 function App() {
   const [followersData, setFollowersData] = useState(null);
   const [followingData, setFollowingData] = useState(null);
-  // const [whitelistData, setWhitelistData] = useState(null);
+  const [hideNotFollowing, setHideNotFollowing] = useState(false);
+  const [hideWhitelisted, setHideWhitelisted] = useState(false);
+  const [expandedLists, setExpandedLists] = useState({
+    notFollowingBack: true,
+    theyDontFollowMeBack: true
+  });
+  const [whitelistedUsers, setWhitelistedUsers] = useState(() => {
+    const saved = localStorage.getItem('whitelistedUsers');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [results, setResults] = useState({
     notFollowingBack: [],
     theyDontFollowMeBack: [],
   });
+
+  useEffect(() => {
+    localStorage.setItem('whitelistedUsers', JSON.stringify(whitelistedUsers));
+  }, [whitelistedUsers]);
+
+  const toggleWhitelist = (username) => {
+    setWhitelistedUsers(prev => {
+      if (prev.includes(username)) {
+        return prev.filter(user => user !== username);
+      } else {
+        return [...prev, username];
+      }
+    });
+  };
 
   const handleFileChange = (event, setter) => {
     const file = event.target.files[0];
@@ -47,11 +70,9 @@ function App() {
 
     const notFollowingBack = followersUsernames.filter(
       (username) => !followingUsernames.includes(username)
-      // && !whitelistData.includes(username)
     );
     const theyDontFollowMeBack = followingUsernames.filter(
       (username) => !followersUsernames.includes(username)
-      // && !whitelistData.includes(username)
     );
 
     setResults({
@@ -84,17 +105,6 @@ function App() {
     <div className="App">
       <ToastContainer />
 
-      {/* Carousel for Images */}
-      <div className="carousel-container">
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-          <img
-            key={num}
-            src={`./screenshots/${num}.png`}
-            alt={`Screenshot ${num}`}
-          />
-        ))}
-      </div>
-
       {/* File Input Section */}
       <div className="file-input-section">
         <div className="file-input">
@@ -122,20 +132,90 @@ function App() {
       <div className="results-section">
         <h2>Results:</h2>
         <div className="result">
-          <h3>You Are Not Following Back:</h3>
-          <ul>
-            {results.notFollowingBack.map((user, index) => (
-              <li key={index}>{user}</li>
-            ))}
-          </ul>
+          <div className="list-header" onClick={() => setExpandedLists(prev => ({ ...prev, notFollowingBack: !prev.notFollowingBack }))}>
+            <h3>You Are Not Following Back:</h3>
+            <span className="toggle-icon">{expandedLists.notFollowingBack ? '▼' : '▶'}</span>
+          </div>
+          {expandedLists.notFollowingBack && (
+            <ul>
+              {results.notFollowingBack
+                .filter(user => !hideWhitelisted || !whitelistedUsers.includes(user))
+                .length > 0 ? (
+                results.notFollowingBack
+                  .filter(user => !hideWhitelisted || !whitelistedUsers.includes(user))
+                  .map((user, index) => (
+                    <li key={index}>
+                      <label className="user-item">
+                        <input
+                          type="checkbox"
+                          checked={whitelistedUsers.includes(user)}
+                          onChange={() => toggleWhitelist(user)}
+                        />
+                        <span>{user}</span>
+                      </label>
+                    </li>
+                  ))
+              ) : (
+                <li className="empty-message">No users for this list</li>
+              )}
+            </ul>
+          )}
         </div>
         <div className="result">
-          <h3>They Are Not Following You Back:</h3>
-          <ul>
-            {results.theyDontFollowMeBack.map((user, index) => (
-              <li key={index}>{user}</li>
-            ))}
-          </ul>
+          <div className="list-header" onClick={() => setExpandedLists(prev => ({ ...prev, theyDontFollowMeBack: !prev.theyDontFollowMeBack }))}>
+            <h3>They Are Not Following You Back:</h3>
+            <span className="toggle-icon">{expandedLists.theyDontFollowMeBack ? '▼' : '▶'}</span>
+          </div>
+          {expandedLists.theyDontFollowMeBack && (
+            <>
+              <div className="filter-toggles">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={hideNotFollowing}
+                    onChange={(e) => setHideNotFollowing(e.target.checked)}
+                  />
+                  Hide users I don't follow
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={hideWhitelisted}
+                    onChange={(e) => setHideWhitelisted(e.target.checked)}
+                  />
+                  Hide whitelisted users
+                </label>
+              </div>
+              <ul>
+                {results.theyDontFollowMeBack
+                  .filter(user =>
+                    (!hideNotFollowing || results.notFollowingBack.includes(user)) &&
+                    (!hideWhitelisted || !whitelistedUsers.includes(user))
+                  )
+                  .length > 0 ? (
+                  results.theyDontFollowMeBack
+                    .filter(user =>
+                      (!hideNotFollowing || results.notFollowingBack.includes(user)) &&
+                      (!hideWhitelisted || !whitelistedUsers.includes(user))
+                    )
+                    .map((user, index) => (
+                      <li key={index}>
+                        <label className="user-item">
+                          <input
+                            type="checkbox"
+                            checked={whitelistedUsers.includes(user)}
+                            onChange={() => toggleWhitelist(user)}
+                          />
+                          <span>{user}</span>
+                        </label>
+                      </li>
+                    ))
+                ) : (
+                  <li className="empty-message">No users for this list</li>
+                )}
+              </ul>
+            </>
+          )}
         </div>
       </div>
 
